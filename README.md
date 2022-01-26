@@ -3,7 +3,7 @@ This repository contains the code and python environments used in the analysis o
 
 To perform the analysis presented in the paper, in prep for GeoHealth, the following scripts are run in the following order:
 
-**Stage 1**: Create lists of co-located indoor and outdoor monitors in the PurpleAir data. These codes were run on my local machine and use the “local” python3 environment in this repository.
+**Stage 1: Create lists of co-located indoor and outdoor monitors in the PurpleAir data. These codes were run on my local machine and use the “local” python3 environment in this repository**.
 
 Cross_check_sensor_lists.py
 
@@ -17,7 +17,7 @@ match_monitor_wSVI.py
 
 Loads co-located indoor and outdoor sensor list output from sensor_list_sites.py and census tract level SVI data from the CDC/ATSDR which can be accessed at https://www.atsdr.cdc.gov/placeandhealth/svi/data_documentation_download.html Use local python packages.Makes Figure 2f.
 
-**Stage 2**: Clean and process the PurpleAir monitor data. These codes use the "remote" python environment in this repository.
+**Stage 2: Clean and process the PurpleAir monitor data. These codes use the "remote" python environment in this repository.**
 
 process_PA_raw.py
 
@@ -35,8 +35,8 @@ Average_processed_data.py
 
 Loads cleaned, inout merges with HMS flags created in add_smoke2PA.py, and processed metadata file. Averages data to daily and hourly averages, creates smoke day flag (using the PM and HMS criteria), and saves averaged merges. Use remote python packages.
 
-**Stage 3**: Perform final analysis on cleaned monitor data and make figures.
-Initial_analysis_allPA.py
+**Stage 3: Perform final analysis on cleaned monitor data and make figures.
+Initial_analysis_allPA.py**
 
 Loads daily-averaged, in-out merges created in average_processed_data.py, clean metadata file, processed metadata file, and original metadata file
 Re-run for each different region, select region in the code header. Makes the components of Figure 5, which are then stitched together in Powerpoint.
