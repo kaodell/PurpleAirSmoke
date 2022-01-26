@@ -54,4 +54,4 @@ Loads daily-averaged, in-out merges created in average_processed_data.py, origin
 plot_PAratio_stats.py
 
 Loads monitor ratio data from calc_inout_ratioy.py, sensor list with SES data from match_monitor_wSVI.py and data on cleaning stats output from AB_clean_stats.py
-Run with main and SI versions of data output from calc_inout_ratio.py Use local python packages. Makes Figures 1, 4, S1, S3, S4 and S10-S13. Note for figures S10-S13, the "main" version should be used even though these are SI figures. 
+Run with main and SI versions of data output from calc_inout_ratio.py Use local python packages. Makes Figures 1, 4, S1, S3, S4 and S10-S13. Note for figures S4 and S10-S13, the "main" version should be used even though these are SI figures. 
