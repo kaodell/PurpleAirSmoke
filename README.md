@@ -35,8 +35,9 @@ Average_processed_data.py
 
 Loads cleaned, inout merges with HMS flags created in add_smoke2PA.py, and processed metadata file. Averages data to daily and hourly averages, creates smoke day flag (using the PM and HMS criteria), and saves averaged merges. Use remote python packages.
 
-**Stage 3: Perform final analysis on cleaned monitor data and make figures.
-Initial_analysis_allPA.py**
+**Stage 3: Perform final analysis on cleaned monitor data and make figures.**
+
+Initial_analysis_allPA.py
 
 Loads daily-averaged, in-out merges created in average_processed_data.py, clean metadata file, processed metadata file, and original metadata file
 Re-run for each different region, select region in the code header. Makes the components of Figure 5, which are then stitched together in Powerpoint.
