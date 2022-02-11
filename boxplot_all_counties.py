@@ -293,7 +293,7 @@ for i in range(2):
 # set titles, labels, and axes limits
 axs[0].set_title('Smoke-Free',fontsize=12)
 axs[1].set_title('Smoke-Impacted',fontsize=12)
-axs[0].set_ylabel('Daily PM$_{2.5}$ [$\mu$gm$^{-3}$]')
+axs[0].set_ylabel('Daily PM$_{2.5}$ [$\mu$g m$^{-3}$]')
 axs[0].set_ylim(0.5,240)
 axs[1].set_ylim(0.5,240)
 fig.show()

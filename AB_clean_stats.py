@@ -309,7 +309,7 @@ for mi in range(metadata_df.shape[0]):
         in_nans = np.where(np.isnan(inoutmrg['PM25_bj_in']))[0]
         rmv_pairs = np.unique(np.hstack([out_nans,in_nans]))
         npairs.append(inoutmrg.shape[0] - len(rmv_pairs))
-        print('total paired obs:',inoutmrg.shape[0]-rmv_pairs.shape)
+        print('total paired obs:',inoutmrg.shape[0]-len(rmv_pairs))
         '''
         # plot to check
         fig,axarr = plt.subplots(1,2)#,subplot_titles=['inside','outside'])

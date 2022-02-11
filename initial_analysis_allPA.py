@@ -16,11 +16,11 @@ PAall_metadata_fn = scratch_fp + 'ABmrg/PAmetadata_wprocessed_names_wUScoloc_d10
 PAall_metadata_wcounty_flags_fn = '/fischer-scratch/kaodell/purple_air/sensor_lists/wUS_co_loc_sensor_list_1000m_Bonne_global4_'+file_desc+'.csv'
 
 # load daily or hourly?
-avg = 'hourly'
+avg = 'daily'
 year = '2020'
 
 # area to load
-ai = 0#corresponds to code and names below
+ai = 4 #corresponds to code and names below
 area_abbrs = ['SF','LA','SLC','PNW','CFR']
 area_names = ['San Francisco','Los Angeles','Salt Lake City','Seattle & Portland','Denver']
 
@@ -83,7 +83,7 @@ for ID in IDs_load:
     if np.isnan(ID):
         nodata += 1
         continue
-    fn_load = 'purpleair_PMAB20_mID'+str(int(ID)).zfill(4)+'_AnBmrg_wUScoloc_d1000m_clean_wsmoke_'+year+'_'+file_desc+'_'+avg+'.csv'
+    fn_load = 'purpleair_PMAB20_mID'+str(int(ID)).zfill(4)+'_AnBmrg_wUScoloc_d1000m_clean_wsmoke_'+year+'_'+file_desc+'_'+avg+'_.csv'
     if fn_load not in os.listdir(PA_data_fp):
         nofile += 1
         continue
@@ -229,9 +229,9 @@ ax = ax.flatten()
 bins = [np.logspace(0,2.7,100,base=10),np.logspace(0,2.7,100,base=10)] # 10**2.7 = 500, max PM we should have here
 counts, xedges, yedges, im0 = ax[0].hist2d(pa_df_nn[opm_use].iloc[nsmoke_inds].values,pa_df_nn[ipm_use].iloc[nsmoke_inds].values,bins=bins,cmap='BuPu', norm=colors.LogNorm())
 counts, xedges, yedges, im1 = ax[1].hist2d(pa_df_nn[opm_use].iloc[smoke_inds].values,pa_df_nn[ipm_use].iloc[smoke_inds].values,bins=bins,cmap='BuPu',norm=colors.LogNorm())
-ax[0].set_xlabel('Outside PM$_{2.5}$ [$\mu$gm$^{-3}$]')
-ax[1].set_xlabel('Outside PM$_{2.5}$ [$\mu$gm$^{-3}$]')
-ax[0].set_ylabel('Inside PM$_{2.5}$ [$\mu$gm$^{-3}$]')
+ax[0].set_xlabel('Outside PM$_{2.5}$ [$\mu$g m$^{-3}$]')
+ax[1].set_xlabel('Outside PM$_{2.5}$ [$\mu$g m$^{-3}$]')
+ax[0].set_ylabel('Inside PM$_{2.5}$ [$\mu$g m$^{-3}$]')
 ax[0].set_xscale('log')
 ax[0].set_yscale('log')
 ax[0].plot([10**0,10**2.7],[10**0,10**2.7],'--',c='black')
@@ -336,7 +336,7 @@ for pa_df_use in [pa_df_ss]:
             axs[j].set_yscale('log')
 
     # add titles, labels, and save
-    axs[0].set_ylabel('Inside PM$_{2.5}$ [$\mu$gm$^{-3}$]')
+    axs[0].set_ylabel('Inside PM$_{2.5}$ [$\mu$g m$^{-3}$]')
     axs[1].set_ylabel('Inside PM$_{2.5}$/Outside PM$_{2.5}$')
     axs[1].set_xlabel('AQI bin')
     fig.suptitle(area_name+', '+pm_use+' Days')

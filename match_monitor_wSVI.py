@@ -12,7 +12,7 @@ sensor_list_fn = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_
 svi_shape_fn = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_smoke/SESdata/SVI from the CDC/SVI2018_US/SVI2018_US_tract'
 svi_data_fn = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_smoke/SESdata/SVI from the CDC/SVI2018_US.csv'
 
-out_fig_fp = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_smoke/PA_figures/'
+out_fig_fp = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_smoke/PA_figures/final/'
 out_fig_desc = 'all_1000_fv'
 
 #%% import modules

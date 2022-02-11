@@ -9,7 +9,8 @@ Created on Fri Apr 16 22:04:03 2021
 #%% user inputs
 # designate files to load
 file_desc = 'fv' # fv = final_version
-version = 'main' # do calculation for main or SI version of figures, only changes ratio file needed
+version = 'main' # do calculation for main or SI version of figures, 
+                    #only changes ratio and boxplot stats file needed
 
 # project folder
 prj_folder = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_smoke/PA_data/'
@@ -17,6 +18,8 @@ prj_folder = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_smok
 ratio_file_load = 'overall_mon_stats_'+file_desc+'_'+version+'.csv'
 sensor_list_fp = 'co_loc_sensor_list_1000m_Bonne_global4_'+file_desc+'_wSES.csv'
 cleaning_numbers_fp = 'clean_stats_test_2020_nTRH_wUS_'+file_desc+'.csv'
+boxplot_nums_fp = 'daily_area_stats_sflag_update_wUS_'+file_desc+'_'+version+'.csv'
+aqi_nums_fp = 'aqi_stats_daily_' # just the first part, have to load by each area below
 # shape file for plotting counties in Figure 2
 shp_fn = prj_folder + 'cb_2018_us_county_500k/cb_2018_us_county_500k.shp'
 
@@ -68,7 +71,8 @@ ratio_df_all = pd.read_csv(prj_folder + ratio_file_load)
 sensor_list = pd.read_csv(prj_folder + sensor_list_fp)
 # cleaning stats
 clean_nums = pd.read_csv(prj_folder + cleaning_numbers_fp)
-
+# boxplot numbers
+bplot_nums = pd.read_csv(prj_folder+boxplot_nums_fp)
 #%% clean ratio file
 # drop locations with < less than 10 smoke free or smoke-impacted days
 drop_inds1 = np.where(ratio_df_all['num_s']<(10))[0]
@@ -110,7 +114,7 @@ for i in range(2):
                         norm=matplotlib.colors.LogNorm())
         cax,kw = matplotlib.colorbar.make_axes(ax,location='bottom',pad=0.0,shrink=0.9)
         cbar=fig.colorbar(cs,cax=cax,extend='max',**kw)
-        cbar.set_label('PM$_{2.5}$ [$\mu$gm$^{-3}$]',fontsize=10,fontproperties = font)
+        cbar.set_label('PM$_{2.5}$ [$\mu$g m$^{-3}$]',fontsize=10,fontproperties = font)
         ax.set_title(titles[i,j],fontsize=10,fontproperties = font)
 plt.savefig(out_fig_fp+'inout_PM_map_median'+out_fig_desc+'.png',dpi=300)
 plt.show()
@@ -193,7 +197,8 @@ for area in ['SF','LA','PNW','SLC','CFR']:
     # also add point for median ratio
     ax.scatter(ratio_df['ratio_median_ns'].iloc[inds].median(),ratio_df['ratio_median_s'].iloc[inds].median(),
        c=county_colors[ai],marker='*',edgecolor='black',s=200,zorder=6,alpha=1)
-    print(area,ratio_df['ratio_median_ns'].iloc[inds].median(),ratio_df['ratio_median_s'].iloc[inds].median())
+    print(area,ratio_df['ratio_median_ns'].iloc[inds].median(),ratio_df['ratio_median_s'].iloc[inds].median(),
+          len(inds))
     ai += 1
 ax.hlines(1,0,ratio_df['ratio_median_ns'].max()+0.1,colors='black',linestyles='dashed')
 ax.vlines(1,0,ratio_df['ratio_median_s'].max()+0.05,colors='black',linestyles='dashed')
@@ -234,10 +239,10 @@ for ai in [0,1]:
     ax[1].set_title('Smoke Impacted')
     ax[2].set_xlabel('SVI')
     ax[3].set_xlabel('SVI')
-    ax[0].set_ylabel('Outdoor PM$_{2.5}$')
-    ax[2].set_ylabel('Indoor PM$_{2.5}$')
+    ax[0].set_ylabel('Outdoor PM$_{2.5}$ [$\mu$g m$^{-3}$]')
+    ax[2].set_ylabel('Indoor PM$_{2.5}$ [$\mu$g m$^{-3}$]')
     plt.tight_layout()
-    plt.savefig(out_fig_fp+'PM_by_SVI_'+areas[ai]+'_'+out_fig_desc+'.png')
+    plt.savefig(out_fig_fp+'PM_by_SVI_'+areas[ai]+'_'+out_fig_desc+'.png',dpi=300)
     
     # smoke-impacted and smoke-free ratios
     fig,ax = plt.subplots(1,2,figsize=(6,4))
@@ -254,7 +259,7 @@ for ai in [0,1]:
     ax[0].set_title('Smoke Free')
     ax[1].set_title('Smoke Impacted')
     plt.subplots_adjust(wspace=0.4)
-    plt.savefig(out_fig_fp+'ratio_by_SVI_'+areas[ai]+'_'+out_fig_desc+'.png')
+    plt.savefig(out_fig_fp+'ratio_by_SVI_'+areas[ai]+'_'+out_fig_desc+'.png',dpi=300)
 
 #%% print numbers in paper, cleaning stats
 # cleaning stats numbers
@@ -279,14 +284,23 @@ print('n T rmv',np.nansum(clean_nums['nTArm'].iloc[clean_inds].values),
       '(',100.0*round((np.nansum(clean_nums['nTArm'].iloc[clean_inds].values))/totb4,4),'%)')
 print('n RH rmv',np.nansum(clean_nums['nRHArm'].iloc[clean_inds].values),
       '(',100.0*round((np.nansum(clean_nums['nRHArm'].iloc[clean_inds].values))/totb4,4),'%)')
-
+print('<50% of day rmv',ratio_df_all['n_count_rmv'].sum(),100.0*ratio_df_all['n_count_rmv'].sum()/ratio_df_all['total_obs_b4'].sum())
 #%% number of smoke-impacted and smoke-free obs
 print('#### Smoke Days and Nonsmoke Day Counts ####')
 print('n smoke obs',np.sum(ratio_df_all['num_s']))
 print('n nosmoke obs',np.sum(ratio_df_all['num_ns']))
 
-#%% figure 1 and 3 discussion numbers
+#%% total monitors in each area with 2020 paired data
+total_region_mons = 0
+for area in areas:
+    count =  len(np.where(ratio_df_all['area_abbr']==area)[0])
+    total_region_mons += count
+    print(area,'n mons 4 ratio:',count)
+print('totals','n mons:',total_region_mons)
+
+#%% figure 1 discussion numbers
 # difference in indoor PM on smoke-impacted and smoke-free days
+print('#### FIGURE 1 DISCUSSION ####')
 in_diff_smoke_days = ratio_df['inPM_median_si'].values - ratio_df['inPM_median_ns'].values
 finite_inds = np.where(ratio_df['inPM_median_ns']>0) # have to take out 0's for percent difference calc
 in_pdiff_smoke_days = (100.0*in_diff_smoke_days[finite_inds])/ratio_df['inPM_median_ns'].iloc[finite_inds].values
@@ -298,7 +312,7 @@ print('25th, 50th, and 75th percentiles, % diff',np.percentile(in_pdiff_smoke_da
 
 # difference in indoor and outdoor PM on smoke-impacted and smoke-free days
 inout_diff_si = ratio_df['inPM_median_si'].values - ratio_df['oPM_median_si'].values
-print('N PM out > in, si',len(np.where(inout_diff_si<0)[0]))
+print('N PM out > in, si',len(np.where(inout_diff_si<0)[0]),'of',len(inout_diff_si))
 inout_diff_sf = ratio_df['inPM_median_ns'].values - ratio_df['oPM_median_ns'].values
 print('N PM out > in, sf',len(np.where(inout_diff_sf<0)[0]))
 print('N PM out < in, sf',len(np.where(inout_diff_sf>0)[0]))
@@ -320,8 +334,24 @@ print('25th, 50th, 75th percentile spearmanR diff si-sf',np.percentile(diff_r,25
       np.median(diff_r),np.percentile(diff_r,75))
 print('r sf > r si',len(np.where(diff_r<0)[0]))
 
+#%% figure 3 discussion
+print('#### FIGURE 3 DISCUSSION ####')
+#bplot_nums.set_index('area',inplace=True)
+bplot_nums['PM25_bj_inns med']
+bplot_nums['PM25_bj_outns med']
+pct_diff_si = 100.0*(bplot_nums['PM25_bj_outs med'].values - bplot_nums['PM25_bj_ins med'].values)/bplot_nums['PM25_bj_outs med'].values 
+print('smoke impacted out-in % diff',bplot_nums.index,pct_diff_si)
+pct_diff_sf = 100.0*(bplot_nums['PM25_bj_outns med'].values - bplot_nums['PM25_bj_inns med'].values)/bplot_nums['PM25_bj_outns med'].values 
+print('smoke free out-in % diff',bplot_nums.index,pct_diff_sf)
 
-#%% print numbers in paper, Figure 3 discussion
+bplot_nums['PM25_bj_outs med']
+bplot_nums['PM25_bj_ins med']
+
+pct_diff_si = 100.0*(bplot_nums['PM25_bj_ins med'].values - bplot_nums['PM25_bj_inns med'].values)/bplot_nums['PM25_bj_inns med'].values 
+print(bplot_nums.index,pct_diff_si)
+
+#%% print numbers in paper, Figure 4 discussion
+print('#### FIGURE 4 DISCUSSION ####')
 # monitors in the four cities with si ratios < 1
 less_1_inds_si = np.where(ratio_df['ratio_median_s']<1)[0]
 less_1_inds_sf = np.where(ratio_df['ratio_median_ns']<1)[0]
@@ -337,12 +367,41 @@ for area in areas:
     total_l1_si += count_l1_si
     total_l1_sf += count_l1_sf
     total_region_mons += count
-    print(area,'n mons:',count,', n ratio <1 sf:',count_l1_sf,'(',round(100.0*count_l1_sf/count,1),'%)'
+    print(area,'n mon pairs w data:',count,', n ratio <1 sf:',count_l1_sf,'(',round(100.0*count_l1_sf/count,1),'%)'
           ', n ratio <1 si:',count_l1_si,'(',round(100.0*count_l1_si/count,1),'%)')
 print('totals','n mons:',total_region_mons,', n ratio <1, sf:',total_l1_sf,', n ratio<1 si:',total_l1_si)
 
 sea_inds = np.where(ratio_df['area_abbr']=='PNW')
 print('max si ratio PNW',np.max(ratio_df['ratio_median_s'].iloc[sea_inds]))
+
+#%% Figure 5 discussion
+ai = 0
+aqi_in_change = []
+aqi_ratio_change = []
+for area in areas:
+    area_aqi_nums = pd.read_csv(prj_folder+aqi_nums_fp+area+'_2020_'+file_desc+'.csv')
+    area_aqi_nums['area'] = [area]*area_aqi_nums.shape[0]
+    area_aqi_nums.drop('Unnamed: 0',axis=1,inplace=True)
+    
+    # drop rows with no data
+    inds_drop = np.where(area_aqi_nums['n_mon_in']==0)[0]
+    area_aqi_nums.drop(inds_drop,axis=0,inplace=True)
+    
+    # calc change per aqi bin and save
+    aqi_in_change.append(np.mean(100.0*np.diff(area_aqi_nums['med_in'].values)/area_aqi_nums['med_in'].iloc[:-1]))
+    aqi_ratio_change.append(np.mean(100.0*np.diff(area_aqi_nums['med_ratio'].values)/area_aqi_nums['med_ratio'].iloc[:-1]))
+
+    if ai == 0:
+        aqi_nums = area_aqi_nums.copy()
+    else:
+        aqi_nums = pd.concat([aqi_nums,area_aqi_nums])
+    ai += 1
+aqi_nums.reset_index(inplace=True,drop=True)
+
+aqi_nums[['stat','n_mon_in','area']]
+
+print('mean inPM change by aqi bin:',np.mean(aqi_in_change).round(2))
+print('mean ratio change by aqi bin:',np.mean(aqi_ratio_change).round(2))
 
 #%% plot graveyard
 # interactive AGU plots
