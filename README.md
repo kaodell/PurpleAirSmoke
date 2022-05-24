@@ -1,7 +1,7 @@
 # PurpleAirSmoke
 This repository contains the code and python environments used in the analysis of a paper under review and Environmental Research: Health. If you would like to use these codes or find any errors in them, please contact me at the email listed on my github profile. 
 
-To perform the analysis presented in the paper, in prep for GeoHealth, the following scripts are run in the following order:
+To perform the analysis presented in the paper the following scripts are run in the following order:
 
 **Stage 1: Create lists of co-located indoor and outdoor monitors in the PurpleAir data. These codes were run on my local machine and use the “local” python3 environment in this repository**.
 
