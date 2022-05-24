@@ -1,5 +1,5 @@
 # PurpleAirSmoke
-This repository contains the code and python environments used in the analysis of a paper soon to be submitted to GeoHealth. If you would like to use these codes or find any errors in them, please contact me at the email listed on my github profile. 
+This repository contains the code and python environments used in the analysis of a paper under review and Environmental Research: Health. If you would like to use these codes or find any errors in them, please contact me at the email listed on my github profile. 
 
 To perform the analysis presented in the paper, in prep for GeoHealth, the following scripts are run in the following order:
 
