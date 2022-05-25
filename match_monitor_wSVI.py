@@ -113,8 +113,8 @@ cum_sum_monitors = np.cumsum(svi_sort['n_mons'])/np.sum(svi_sort['n_mons'].value
 
 # plot total US values
 fig, ax = plt.subplots(1,1,figsize=(12,6))
-ax.plot(100.0*svi_sort['RPL_THEMES'],100.0*cum_sum_pop,'--',label='Population',color='dimgrey')
-ax.plot(100.0*svi_sort['RPL_THEMES'],100.0*cum_sum_monitors,label='Monitors',color='dimgrey')
+ax.plot(svi_sort['RPL_THEMES'],100.0*cum_sum_pop,'--',label='Population',color='dimgrey')
+ax.plot(svi_sort['RPL_THEMES'],100.0*cum_sum_monitors,label='Monitors',color='dimgrey')
 
 # get area-specific values and plot
 county_colors = ['#984ea3','#e41a1c','#ff7f00','#377eb8','#4daf4a']
@@ -124,11 +124,11 @@ for area in ['SF','SLC','LA','PNW','CFR']:
     cum_sum_pop = np.cumsum(svi_sort['E_TOTPOP'].iloc[inds].values)/np.sum(svi_sort['E_TOTPOP'].iloc[inds].values)
     cum_sum_monitors = np.cumsum(svi_sort['n_mons'].iloc[inds].values)/np.sum(svi_sort['n_mons'].iloc[inds].values)
 
-    ax.plot(100.0*svi_sort['RPL_THEMES'].iloc[inds],100.0*cum_sum_pop,'--',color = county_colors[ai])
-    ax.plot(100.0*svi_sort['RPL_THEMES'].iloc[inds],100.0*cum_sum_monitors, color=county_colors[ai])
+    ax.plot(svi_sort['RPL_THEMES'].iloc[inds],100.0*cum_sum_pop,'--',color = county_colors[ai])
+    ax.plot(svi_sort['RPL_THEMES'].iloc[inds],100.0*cum_sum_monitors, color=county_colors[ai])
     
     # print values for "high vulneability" group in each area
-    ind = np.where(svi_sort['RPL_THEMES'].iloc[inds]>0.9)[0][0]
+    ind = np.where(svi_sort['RPL_THEMES'].iloc[inds]>0.5)[0][0]
     cum_sum_monitors = np.array(cum_sum_monitors)
     cum_sum_pop = np.array(cum_sum_pop)
     print(area,'mon:',100.0*(1.0-cum_sum_monitors[ind]),'pop:',100.0*(1.0-cum_sum_pop[ind]))
@@ -151,7 +151,7 @@ ax.spines["right"].set_visible(False)
 ax.spines["top"].set_visible(False)
 ax.set_xlabel('Social Vulnerability Index',fontsize=16,)
 ax.set_ylabel('Cumulative Percent',fontsize=16,)
-ax.set_xlim(0,100)
+ax.set_xlim(0,1)
 ax.set_ylim(0,100)
 ax.legend(frameon=False,fontsize=16,)
 plt.savefig(out_fig_fp+'SVI_mons_pop'+out_fig_desc+'.png',dpi=300)
