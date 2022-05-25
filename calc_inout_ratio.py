@@ -65,6 +65,10 @@ ratio_mean, ratio_median, ratio_25pct, ratio_75pct = [], [], [], []
 ratio_mean_s, ratio_median_s, ratio_25pct_s, ratio_75pct_s = [], [], [], []
 ratio_mean_ns, ratio_median_ns, ratio_25pct_ns, ratio_75pct_ns = [], [], [], []
 
+# slopes for in v out
+smoke_slope, smoke_slopes_pval = [], []
+nosmoke_slope, nosmoke_slopes_pval = [], []
+
 # correlation of monitors
 corrs_all, corrs_s, corrs_ns, ks_iPM_pval, ks_ratio_pval = [], [], [], [], []
 
@@ -101,8 +105,8 @@ for ID in IDs_load:
         continue
     
     # remove %inds with <50% of the day available
-    inds_o_rmv = np.where(pa_df_all2['pm_in_count']<0.5*(6*24))[0]
-    inds_i_rmv = np.where(pa_df_all2['pm_out_count']<0.5*(6*24))[0]
+    inds_o_rmv = np.where(pa_df_all2['pm_out_count']<0.5*(6*24))[0]
+    inds_i_rmv = np.where(pa_df_all2['pm_in_count']<0.5*(6*24))[0]
     inds_rmv = np.unique(np.hstack([inds_o_rmv,inds_i_rmv]))
     pa_df3 = pa_df_all2.drop(inds_rmv)
     pa_df3.reset_index(inplace=True,drop=True)
@@ -141,10 +145,10 @@ for ID in IDs_load:
     # in loop: calculate total numbers, identify smoke inds, nonsmoke inds and relevant metadata
     ################################################################################################
     # now save cleaning numbers from above
-    n_count_rmv.append(len(inds_rmv))
-    total_obs_b4.append(pa_df_all2.shape[0])
+    n_count_rmv.append(len(inds_rmv)) # days with less than 50% avail obs for average
+    total_obs_b4.append(pa_df_all2.shape[0]) # observation count after removing in and out nans
     
-    # ount total obs for analysis and get si and sf inds
+    # count total obs for analysis and get si and sf inds
     num_all.append(pa_df.shape[0])
     s_inds = np.where(pa_df['smoke_flag']==1)
     num_s.append(len(s_inds[0]))
@@ -205,6 +209,23 @@ for ID in IDs_load:
     oPM_median_ns.append(np.nanmedian(pa_df[oPM_use].iloc[ns_inds].values))
     # all-day outdoor PM mean
     oPM_mean_all.append(pa_df[oPM_use].mean())
+
+    # calculate linear regression of indoor and outdoor PM on smoke days
+    if len(s_inds[0])==0:
+        smoke_slope.append(np.nan)
+        smoke_slopes_pval.append(np.nan)
+    else:
+        slope, intercept, r, p, se = st.linregress(pa_df[oPM_use].iloc[s_inds].values, pa_df[iPM_use].iloc[s_inds].values)
+        smoke_slope.append(slope)
+        smoke_slopes_pval.append(p)
+        
+    if len(ns_inds[0])==0:
+        nosmoke_slope.append(np.nan)
+        nosmoke_slopes_pval.append(np.nan)
+    else:
+        slope, intercept, r, p, se = st.linregress(pa_df[oPM_use].iloc[ns_inds].values, pa_df[iPM_use].iloc[ns_inds].values)
+        nosmoke_slope.append(slope)
+        nosmoke_slopes_pval.append(p)
     
     ################################################################################################
     # in loop: calculate correlation
@@ -217,7 +238,7 @@ for ID in IDs_load:
         ks_iPM_pval.append(np.nan)
         ks_ratio_pval.append(np.nan)
     elif np.any([num_s[-1]<3,num_ns[-1]<3]):
-        corr_all = st.spearmanr(pa_df[oPM_use],pa_df[iPM_use],nan_policy='omit')[0] # not any nans, but good to define
+        corr_all = st.spearmanr(pa_df[oPM_use],pa_df[iPM_use],nan_policy='omit')[0] # no nans, but good to define
         corr_ns = np.nan
         corr_s = np.nan
         ks_iPM_pval.append(np.nan)
@@ -228,7 +249,7 @@ for ID in IDs_load:
         corr_s = st.spearmanr(pa_df[oPM_use].iloc[s_inds],pa_df[iPM_use].iloc[s_inds],nan_policy='omit')[0]
 
         # Is in PM statistically different on smoke days?
-        # do K-S test for non-parametric... we don't use this ultimately in the paper, not sure this is the best test
+        # do K-S test for non-parametric... we don't use this ultimately in the paper
         ks_iPM_pval.append(st.ks_2samp(pa_df[iPM_use].iloc[s_inds],pa_df[iPM_use].iloc[ns_inds],alternative='two-sided')[1])
         ks_ratio_pval.append(st.ks_2samp(pa_df['ratio'].iloc[s_inds],pa_df['ratio'].iloc[ns_inds],alternative='two-sided')[1])
     corrs_all.append(corr_all)
@@ -250,6 +271,9 @@ overall_stats_df = pd.DataFrame(data={'ID':IDs,'lon':lons,'lat':lats,
                                       'ratio_25pct_s':ratio_25pct_s,'ratio_75pct_s':ratio_75pct_s,
                                       'ratio_25pct_ns':ratio_25pct_ns,'ratio_75pct_ns':ratio_75pct_ns,
                                       'ratio_25pct_ad':ratio_25pct,'ratio_75pct_ad':ratio_75pct,
+                                      # slopes
+                                      'smoke_slopes':smoke_slope, 'nosmoke_slopes':nosmoke_slope,
+                                      'smoke_slopes_pval':smoke_slopes_pval, 'nosmoke_slopes_pval':nosmoke_slopes_pval,
                                       # correlations
                                       'spearman_r_ad':corrs_all,'spearman_r_s':corrs_s,'spearman_r_ns':corrs_ns,
                                       'ks_iPM_pval':ks_iPM_pval,'ks_ratio_pval':ks_ratio_pval,
@@ -258,4 +282,4 @@ overall_stats_df = pd.DataFrame(data={'ID':IDs,'lon':lons,'lat':lats,
                                       'num_s_ratio':num_s_ratio,'num_ns_ratio':num_ns_ratio,'num_all_ratio':num_all_ratio,
                                       'n_count_rmv':n_count_rmv,
                                       'total_obs_b4':total_obs_b4})
-overall_stats_df.to_csv(out_file_fp + 'overall_mon_stats_'+file_desc+'_'+version+'.csv')
+overall_stats_df.to_csv(out_file_fp + 'overall_mon_stats_'+file_desc+'_'+version+'_revisions.csv')
