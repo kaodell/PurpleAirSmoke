@@ -15,7 +15,7 @@ Loads moved IDs output from cross_check_sensor_lists.py, Bonne site list, and a 
 
 match_monitor_wSVI.py
 
-Loads co-located indoor and outdoor sensor list output from sensor_list_sites.py and census tract level SVI data from the CDC/ATSDR which can be accessed at https://www.atsdr.cdc.gov/placeandhealth/svi/data_documentation_download.html Use local python packages.Makes Figure 2f.
+Loads co-located indoor and outdoor sensor list output from sensor_list_sites.py and census tract level SVI data from the CDC/ATSDR which can be accessed at https://www.atsdr.cdc.gov/placeandhealth/svi/data_documentation_download.html Use local python packages. Makes Figure 2f.
 
 **Stage 2: Clean and process the PurpleAir monitor data. These codes use the "remote" python environment in this repository.**
 
@@ -41,11 +41,11 @@ Initial_analysis_allPA.py
 
 Loads daily-averaged, in-out merges created in average_processed_data.py, clean metadata file, processed metadata file, and original metadata file
 Re-run for each different region, select region in the code header. Makes the components of Figure 5, which are then stitched together in Powerpoint.
-Makes Figures S2-S6, hourly (need to select hourly in header for these figures). Use remote python packages.
+Makes Figures S6-S10, hourly (need to select hourly in header for these figures). Use remote python packages.
 
 Boxplot_all_counties.py
 
-Loads daily-averaged, in-out merges created in average_processed_data.py, clean metadata file, and processed metadata file. Makes Figures 3 and S2 (run separately, select SI or main version in header). Use remote python packages.
+Loads daily-averaged, in-out merges created in average_processed_data.py, clean metadata file, and processed metadata file. Makes Figures 3 and S3 (run separately, select SI or main version in header). Use remote python packages.
 
 Calc_inout_ratio.py
 
@@ -54,4 +54,4 @@ Loads daily-averaged, in-out merges created in average_processed_data.py, origin
 plot_PAratio_stats.py
 
 Loads monitor ratio data from calc_inout_ratioy.py, sensor list with SES data from match_monitor_wSVI.py and data on cleaning stats output from AB_clean_stats.py
-Run with main and SI versions of data output from calc_inout_ratio.py Use local python packages. Makes Figures 1, 4, S1, S3, S4 and S10-S13. Note for figures S4 and S10-S13, the "main" version should be used even though these are SI figures. 
+Run with main and SI versions of data output from calc_inout_ratio.py Use local python packages. Makes Figures 1, 2a-e 4, S1, S2, S4, S5 and S11-S14. Note for figures S1, S5, and S11-S14, the "main" version should be used even though these are SI figures. 
