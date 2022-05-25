@@ -15,7 +15,8 @@ version = 'main' # do calculation for main or SI version of figures,
 # project folder
 prj_folder = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_smoke/PA_data/'
 # files to load
-ratio_file_load = 'overall_mon_stats_'+file_desc+'_'+version+'.csv'
+metadata_fp = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_smoke/PA_data/PAmetadata_wprocessed_names_wUScoloc_d1000m_fv.csv'
+ratio_file_load = 'overall_mon_stats_'+file_desc+'_'+version+'_revisions.csv'
 sensor_list_fp = 'co_loc_sensor_list_1000m_Bonne_global4_'+file_desc+'_wSES.csv'
 cleaning_numbers_fp = 'clean_stats_test_2020_nTRH_wUS_'+file_desc+'.csv'
 boxplot_nums_fp = 'daily_area_stats_sflag_update_wUS_'+file_desc+'_'+version+'.csv'
@@ -25,7 +26,7 @@ shp_fn = prj_folder + 'cb_2018_us_county_500k/cb_2018_us_county_500k.shp'
 
 # where to put output figures
 out_fig_fp = '/Volumes/ODell_Files/School_Files/CSU/Research/NSF/purple_air_smoke/PA_figures/final/'
-out_fig_desc = 'daily_'+file_desc+'_'+version
+out_fig_desc = 'daily_'+file_desc+'_'+version + '_revisions_'
 
 #%% load modules
 import pandas as pd
@@ -66,13 +67,16 @@ def mk_map(ax):
     ax.set_extent([-103,-125,31,49])
 
 #%% load data
+metadata = pd.read_csv(metadata_fp)
+
 ratio_df_all = pd.read_csv(prj_folder + ratio_file_load)
 # sensor list
 sensor_list = pd.read_csv(prj_folder + sensor_list_fp)
 # cleaning stats
-clean_nums = pd.read_csv(prj_folder + cleaning_numbers_fp)
+clean_nums = pd.read_csv(prj_folder + cleaning_numbers_fp,dtype={'ID':'str'})
 # boxplot numbers
 bplot_nums = pd.read_csv(prj_folder+boxplot_nums_fp)
+
 #%% clean ratio file
 # drop locations with < less than 10 smoke free or smoke-impacted days
 drop_inds1 = np.where(ratio_df_all['num_s']<(10))[0]
@@ -160,7 +164,6 @@ reader2 = shapefile.Reader(shp_fn)
 records = reader2.records()
 shapes = reader2.shapes()
 for area in areas:
-    inds = np.where(ratio_df_all['area_abbr']==area)[0]
     inds2 = np.where(ratio_df['area_abbr']==area)[0]
     ax = axarr[ai]
     ax.outline_patch.set_edgecolor('grey')
@@ -263,28 +266,68 @@ for ai in [0,1]:
 
 #%% print numbers in paper, cleaning stats
 # cleaning stats numbers
-clean_inds = []
-for ci in range(clean_nums.shape[0]):
-    sID = str(clean_nums['ID'].iloc[ci])[:4]
-    rind = np.where(ratio_df_all['ID']==float(sID))[0]
-    clean_inds.append(ci)
+# first identify rows where outdoor monitor is double counted
+clean_nums['ID']=clean_nums['ID'].astype('string')
+in_inds_keep = []
+out_inds_keep = []
+nan_inds = []
+aids_used = []
+aids_check = []
+dups = 0
+for i in range(clean_nums.shape[0]):
+    if pd.isna(clean_nums['ID'].iloc[i]):
+        nan_inds.append(i)
+        aids_check.append(0)
+        continue
+    pid = clean_nums['ID'].iloc[i].split('_')
+    if pid[1]=='in':
+        in_inds_keep.append(i)
+        aid_ind = np.where(metadata['processed_names']==int(pid[0]))[0]
+        aid = metadata['in_AID'].iloc[aid_ind].values[0]
+        aids_check.append(aid)
+    elif pid[1]=='out':
+        aid_ind = np.where(metadata['processed_names']==int(pid[0]))[0]
+        aid = metadata['out_AID'].iloc[aid_ind].values[0]
+        aids_check.append(aid)
+        if aid in aids_used:
+            dups+=1
+            # check that row is a duplicate         
+            continue
+        else:
+            aids_used.append(aid)
+            out_inds_keep.append(i)
+    else:
+        print(pid) # shouldn't go here
+#clean_nums['aids'] = aids_check
+clean_nums.duplicated(clean_nums.keys()[2:-1], keep=True)
+# also keep inds of monitors that didn't get a processed id because they didn't have data post cleaning
+# inds_keep = np.hstack([out_inds_keep,in_inds_keep,nan_inds]) # only use to count total unique obs post-cleaning
 
-# count stats
+# two of the nans are also duplicates, so just remove using pandas duplicated function
+# this matches what we did above, so a good check the code is working and duplicates aIDs are in fact duplicates!
+# don't keep ID, index, or paired obs varibles in the duplicate search as these won't match for duplicated outdoor mons
+inds_keep = np.where(clean_nums.duplicated(clean_nums.keys()[2:-1], keep="first").values ==False)[0]
+
 print('#### CLEANING STATS ####')
-totb4 = np.nansum(clean_nums['nobs_b4'].iloc[clean_inds].values)
+totb4 = np.nansum(clean_nums['nobs_b4'].values)
 print('total b4',totb4)
-print('total after',np.nansum(clean_nums['nobs_after'].iloc[clean_inds].values))
-print('total pct rmv',100.0*(totb4-np.nansum(clean_nums['nobs_after'].iloc[clean_inds].values))/totb4)
-print('total paired',np.nansum(clean_nums['npairs'].iloc[clean_inds].values))
-print('n > 500 rmv',np.nansum(clean_nums['nPMhigh_rm'].iloc[clean_inds].values),
-      '(',100.0*round(np.nansum(clean_nums['nPMhigh_rm'].iloc[clean_inds].values)/totb4,4),'%)')
-print('n AB rmv',np.nansum(clean_nums['nPMrm'].iloc[clean_inds].values),
-      '(',100.0*round((np.nansum(clean_nums['nPMrm'].iloc[clean_inds].values))/totb4,4),'%)')
-print('n T rmv',np.nansum(clean_nums['nTArm'].iloc[clean_inds].values),
-      '(',100.0*round((np.nansum(clean_nums['nTArm'].iloc[clean_inds].values))/totb4,4),'%)')
-print('n RH rmv',np.nansum(clean_nums['nRHArm'].iloc[clean_inds].values),
-      '(',100.0*round((np.nansum(clean_nums['nRHArm'].iloc[clean_inds].values))/totb4,4),'%)')
+print('total after',np.nansum(clean_nums['nobs_after'].values))
+print('total after, unique',np.nansum(clean_nums['nobs_after'].iloc[inds_keep].values))
+print('total pct rmv',100.0*(totb4-np.nansum(clean_nums['nobs_after'].values))/totb4)
+print('total paired',np.nansum(clean_nums['npairs'].values))
+print('n > 500 rmv',np.nansum(clean_nums['nPMhigh_rm'].values),
+      '(',100.0*round(np.nansum(clean_nums['nPMhigh_rm'].values)/totb4,4),'%)')
+print('n AB rmv',np.nansum(clean_nums['nPMrm'].values),
+      '(',100.0*round((np.nansum(clean_nums['nPMrm'].values))/totb4,4),'%)')
+print('n T rmv',np.nansum(clean_nums['nTArm'].values),
+      '(',100.0*round((np.nansum(clean_nums['nTArm'].values))/totb4,4),'%)')
+print('n RH rmv',np.nansum(clean_nums['nRHArm'].values),
+      '(',100.0*round((np.nansum(clean_nums['nRHArm'].values))/totb4,4),'%)')
+
+# daily averaging stats
+# total before here is paired observations so we don't need to remove double-counted outdoor obs
 print('<50% of day rmv',ratio_df_all['n_count_rmv'].sum(),100.0*ratio_df_all['n_count_rmv'].sum()/ratio_df_all['total_obs_b4'].sum())
+
 #%% number of smoke-impacted and smoke-free obs
 print('#### Smoke Days and Nonsmoke Day Counts ####')
 print('n smoke obs',np.sum(ratio_df_all['num_s']))
@@ -336,19 +379,19 @@ print('r sf > r si',len(np.where(diff_r<0)[0]))
 
 #%% figure 3 discussion
 print('#### FIGURE 3 DISCUSSION ####')
-#bplot_nums.set_index('area',inplace=True)
+bplot_nums.set_index('area',inplace=True)
 bplot_nums['PM25_bj_inns med']
 bplot_nums['PM25_bj_outns med']
 pct_diff_si = 100.0*(bplot_nums['PM25_bj_outs med'].values - bplot_nums['PM25_bj_ins med'].values)/bplot_nums['PM25_bj_outs med'].values 
-print('smoke impacted out-in % diff',bplot_nums.index,pct_diff_si)
+print('smoke impacted out-in % diff',bplot_nums.index.values,pct_diff_si)
 pct_diff_sf = 100.0*(bplot_nums['PM25_bj_outns med'].values - bplot_nums['PM25_bj_inns med'].values)/bplot_nums['PM25_bj_outns med'].values 
-print('smoke free out-in % diff',bplot_nums.index,pct_diff_sf)
+print('smoke free out-in % diff',bplot_nums.index.values,pct_diff_sf)
 
 bplot_nums['PM25_bj_outs med']
 bplot_nums['PM25_bj_ins med']
 
-pct_diff_si = 100.0*(bplot_nums['PM25_bj_ins med'].values - bplot_nums['PM25_bj_inns med'].values)/bplot_nums['PM25_bj_inns med'].values 
-print(bplot_nums.index,pct_diff_si)
+pct_diff_in = 100.0*(bplot_nums['PM25_bj_ins med'].values - bplot_nums['PM25_bj_inns med'].values)/bplot_nums['PM25_bj_inns med'].values 
+print(bplot_nums.index.values,pct_diff_in)
 
 #%% print numbers in paper, Figure 4 discussion
 print('#### FIGURE 4 DISCUSSION ####')
@@ -375,6 +418,7 @@ sea_inds = np.where(ratio_df['area_abbr']=='PNW')
 print('max si ratio PNW',np.max(ratio_df['ratio_median_s'].iloc[sea_inds]))
 
 #%% Figure 5 discussion
+print('#### FIGURE 5 DISCUSSION ####')
 ai = 0
 aqi_in_change = []
 aqi_ratio_change = []
@@ -386,22 +430,63 @@ for area in areas:
     # drop rows with no data
     inds_drop = np.where(area_aqi_nums['n_mon_in']==0)[0]
     area_aqi_nums.drop(inds_drop,axis=0,inplace=True)
+    area_aqi_nums.reset_index(inplace=True,drop=True)
     
     # calc change per aqi bin and save
-    aqi_in_change.append(np.mean(100.0*np.diff(area_aqi_nums['med_in'].values)/area_aqi_nums['med_in'].iloc[:-1]))
-    aqi_ratio_change.append(np.mean(100.0*np.diff(area_aqi_nums['med_ratio'].values)/area_aqi_nums['med_ratio'].iloc[:-1]))
-
+    aqi_in_change = np.hstack([aqi_in_change, 100.0*np.diff(area_aqi_nums['med_in'].values)/area_aqi_nums['med_in'].iloc[:-1].values])
+    aqi_ratio_change = np.hstack([aqi_ratio_change, 100.0*np.diff(area_aqi_nums['med_ratio'].values)/area_aqi_nums['med_ratio'].iloc[:-1].values])
+    
     if ai == 0:
         aqi_nums = area_aqi_nums.copy()
     else:
         aqi_nums = pd.concat([aqi_nums,area_aqi_nums])
     ai += 1
+    
 aqi_nums.reset_index(inplace=True,drop=True)
 
 aqi_nums[['stat','n_mon_in','area']]
 
 print('mean inPM change by aqi bin:',np.mean(aqi_in_change).round(2))
 print('mean ratio change by aqi bin:',np.mean(aqi_ratio_change).round(2))
+
+print('median slope:',ratio_df['smoke_slopes'].median(),'IQR:',np.percentile(ratio_df['smoke_slopes'],25),
+      np.percentile(ratio_df['smoke_slopes'],75))
+sig_inds = np.where(ratio_df['smoke_slopes_pval']<0.05)[0] # scipy lingress gives two-sided pval by default
+print(len(sig_inds),'statistically significant slopes, 95% CI')
+print('stats of sig inds. median',ratio_df['smoke_slopes'].iloc[sig_inds].median(),
+      'IQR',np.percentile(ratio_df['smoke_slopes'].iloc[sig_inds],25),
+      np.percentile(ratio_df['smoke_slopes'].iloc[sig_inds],75))
+
+#%% supplemental figure showing data completeness
+fig, ax = plt.subplots(nrows=6,ncols=2,figsize=(10,10))
+# add gray for monitors not in a urban area
+county_colors_all = ['#984ea3', '#ff7f00', '#377eb8', '#e41a1c', '#4daf4a','gray']
+ai = 0
+text_placement = [1200,100,60,22,20,230]
+names_plot = ['San Francisco', 'Los Angeles','Seattle & Portland','Salt Lake City','Denver','Other']
+
+for area in ['SF', 'LA', 'PNW', 'SLC', 'CFR','000']:
+    inds =  np.where(ratio_df_all['area_abbr']==area)[0]
+    inds_use =  np.where(ratio_df['area_abbr']==area)[0]
+    tot_n=(str(len(inds)))
+    use_n=(str(len(inds_use)))
+    ax[ai,0].hist(ratio_df_all['num_ns'].iloc[inds],bins = [0,10,50,100,150,200,250,300,366],
+                  facecolor=county_colors_all[ai],alpha=0.8)
+    ax[ai,1].hist(ratio_df_all['num_s'].iloc[inds],bins = [0,10,20,30,40,50,60,70],
+                  facecolor=county_colors_all[ai],alpha=0.8)
+    ax[ai,0].spines['top'].set_visible(False)
+    ax[ai,0].spines['right'].set_visible(False)
+    ax[ai,1].spines['top'].set_visible(False)
+    ax[ai,1].spines['right'].set_visible(False)
+    ax[ai,1].text(70,text_placement[ai],names_plot[ai]+'\n total: '+tot_n+'\n total >10: '+use_n, 
+                 dict(ha='right',va='top',fontsize=12, color=county_colors_all[ai]))
+    ai += 1
+
+ax[2,0].set_ylabel('N Monitor Pairs')
+ax[2,1].set_ylabel('N Monitor Pairs')
+ax[-1,0].set_xlabel('Smoke-Free Observations\n [Count, Days]')
+ax[-1,1].set_xlabel('Smoke-Impacted Observations\n [Count, Days]')
+plt.savefig(out_fig_fp+'monitor_counts_'+out_fig_desc +'.png', dpi=300)
 
 #%% plot graveyard
 # interactive AGU plots
