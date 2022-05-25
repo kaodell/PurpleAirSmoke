@@ -20,7 +20,7 @@ avg = 'daily'
 year = '2020'
 
 # area to load
-ai = 4 #corresponds to code and names below
+ai = 0 #corresponds to code and names below
 area_abbrs = ['SF','LA','SLC','PNW','CFR']
 area_names = ['San Francisco','Los Angeles','Salt Lake City','Seattle & Portland','Denver']
 
@@ -346,8 +346,9 @@ for pa_df_use in [pa_df_ss]:
 ######################################################################################
 # Print/Save Additional Numbers for Paper
 ######################################################################################
-uh_aqi_inds = np.where(pa_df_ss[opm_use]>150.45)
+uh_aqi_inds = np.where(pa_df_ss[opm_use]>=150.45)
 print('n out PM > 150.45',len(uh_aqi_inds[0]))
+print('unq monitors',len(np.unique(pa_df_ss['ID'].iloc[uh_aqi_inds])))
 print('date out PM > 150.45',np.unique(pa_df_ss['time_loc'].iloc[uh_aqi_inds]))
 
 # number of indoor PM at same AQI as outdoor above the moderate level

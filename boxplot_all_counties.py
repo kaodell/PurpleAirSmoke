@@ -14,7 +14,7 @@ scratch_fp = '/fischer-scratch/kaodell/purple_air/Bonne_data/final_files/'
 # version of files to use
 file_desc = 'fv' # fv = final version pre-submission
 # make figures for main text or SI?
-version = 'SI' # or 'SI'
+version = 'main' # or 'SI'
 
 # specific files and paths
 PA_data_fp = scratch_fp + 'ABmrg_clean_wsmoke/'
@@ -37,7 +37,7 @@ import cartopy.feature as cfeature
 import cartopy.crs as ccrs
 import cartopy
 import os
-from scipy.stats import linregress
+from scipy.stats import linregress, ks_2samp
 import datetime as dt
 import matplotlib.colors as colors
 
@@ -141,10 +141,10 @@ elif version == 'main':
     pa_df_nn = pa_df_nn2
 
 # idenfity smoke-impacted and smoke-free inds
-smoke_inds = np.where(pa_df_nn['smoke_flag']==1)
-nsmoke_inds = np.where(pa_df_nn['HMS_flag']==0)
+smoke_inds = np.where(pa_df_nn['smoke_flag']==1)[0]
+nsmoke_inds = np.where(pa_df_nn['HMS_flag']==0)[0]
 
-# make negatives zeros
+# make negatives zeros - sometimes cf makes values negative, but we wait to change to zeros until after averaging
 pa_df_nn['PM25_bj_in'] = np.where(pa_df_nn['PM25_bj_in']<0,0,pa_df_nn['PM25_bj_in'])
 pa_df_nn['PM25_bj_out'] = np.where(pa_df_nn['PM25_bj_out']<0,0,pa_df_nn['PM25_bj_out'])
 
@@ -153,13 +153,14 @@ pa_df_nn['PM25_bj_in'] = np.round(pa_df_nn['PM25_bj_in'].values,2)
 pa_df_nn['PM25_bj_out'] = np.round(pa_df_nn['PM25_bj_out'].values,2)    
 
 ########################################################################################################
-# calculate linear regression of in vs out for paper for these areas
+# calculate linear regression of in vs out for paper for these areas - do not use in revised version
 ########################################################################################################
+'''
 stats_a = linregress(pa_df_nn['PM25_bj_out'].iloc[smoke_inds],pa_df_nn['PM25_bj_in'].iloc[smoke_inds])
 # also do orthogonal least squares regression, linear ends up in paper, but we compare
 from scipy import odr
 def f(B, x):
-    '''Linear function y = m*x + b'''
+    # Linear function y = m*x + b
     # B is a vector of the parameters, x is an array of the current x values.
     # x is in the same format as the x passed to Data or RealData.
     # Return an array in the same format as y passed to Data or RealData.
@@ -172,6 +173,15 @@ stats_a_odr = myodr.run()
 print('OLS out v in regression results', stats_a) # these are in the paper
 print('Orthogonal LS out v in regression results', stats_a_odr.beta)
 
+res = stats_a
+x = pa_df_nn['PM25_bj_out'].iloc[smoke_inds]
+from scipy.stats import t
+tinv = lambda p, df: abs(t.ppf(p/2, df))
+ts = tinv(0.05, len(x)-2)
+print(f"slope (95%): {res.slope:.6f} +/- {ts*res.stderr:.6f}")
+print(f"intercept (95%): {res.intercept:.6f}"
+      f" +/- {ts*res.intercept_stderr:.6f}")
+'''
 ########################################################################################################
 # identify smoke and no smoke inds for each area for plotting and calculating stats
 ########################################################################################################
@@ -225,6 +235,29 @@ for var in ['PM25_bj_in','PM25_bj_out']:
         area_stats[var+key+' 25pct']=key_25pct
         area_stats[var+key+' 75pct']=key_75pct
 area_stats.to_csv('/home/kaodell/NSF/purple_air_smoke/daily_area_stats_sflag_update_wUS_'+file_desc+'_'+version+'.csv')
+
+# calculate where difference between SI and SF indoor is statistically significant
+# using a ks test
+all_smoke_inds = [ba_s_inds,la_s_inds,sea_s_inds,slc_s_inds,cfr_s_inds]
+all_nonsmoke_inds = [ba_ns_inds,la_ns_inds,sea_ns_inds,slc_ns_inds,cfr_ns_inds]
+i = 0
+for name in area_names:
+    smoke_inds_area = all_smoke_inds[i]
+    nsmoke_inds_area = all_nonsmoke_inds[i]
+    in_ks, in_pval = ks_2samp(pa_df_nn['PM25_bj_in'].iloc[smoke_inds_area], pa_df_nn['PM25_bj_in'].iloc[nsmoke_inds_area])
+    print(name, 'in SI v SF, ks test',in_ks,in_pval)
+    i += 1
+
+# count times when indoor > 35 ug/m3 on heavily impacted smoke days
+inds = smoke_inds[np.where(pa_df_nn['PM25_bj_out'].iloc[smoke_inds]>=55.45)[0]]
+inds2 = np.where(pa_df_nn['PM25_bj_in'].iloc[inds]>=35.45)[0]
+print('smoke-impacted indoor > 35:',len(inds2),len(inds2)/len(inds))
+
+# count times when in/out ratio is < 1 on smoke days when out >= 12 ug/m3
+# also have code to do this in the initial_analysis_allPA code, but is faster to do it here
+inds = smoke_inds[np.where(pa_df_nn['PM25_bj_out'].iloc[smoke_inds]>=12.05)]
+inds2 = np.where((pa_df_nn['PM25_bj_in'].iloc[inds]/pa_df_nn['PM25_bj_out'].iloc[inds]) < 1)[0]
+print('si ratio < 1, at or above moderate level',len(inds2),len(inds2)/len(inds))
 
 ########################################################################################################
 # make boxplots
