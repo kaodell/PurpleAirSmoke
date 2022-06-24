@@ -248,16 +248,52 @@ for name in area_names:
     print(name, 'in SI v SF, ks test',in_ks,in_pval)
     i += 1
 
-# count times when indoor > 35 ug/m3 on heavily impacted smoke days
-inds = smoke_inds[np.where(pa_df_nn['PM25_bj_out'].iloc[smoke_inds]>=55.45)[0]]
-inds2 = np.where(pa_df_nn['PM25_bj_in'].iloc[inds]>=35.45)[0]
-print('smoke-impacted indoor > 35:',len(inds2),len(inds2)/len(inds))
+# count times when indoor > 35 ug/m3 on all smoke days and heavily impacted smoke days
+inds = np.where(pa_df_nn['PM25_bj_in'].iloc[smoke_inds]>=12.05)[0]
+print('smoke-impacted indoor > 12',len(inds),len(inds)/len(smoke_inds))
+inds = np.where(pa_df_nn['PM25_bj_in'].iloc[smoke_inds]>=35.45)[0]
+print('smoke-impacted indoor > 35',len(inds),len(inds)/len(smoke_inds))
+inds1 = smoke_inds[np.where(pa_df_nn['PM25_bj_out'].iloc[smoke_inds]>=55.45)[0]]
+inds2 = np.where(pa_df_nn['PM25_bj_in'].iloc[inds1]>=35.45)[0]
+print('heavily smoke-impacted indoor > 35:',len(inds2),len(inds2)/len(inds1))
 
 # count times when in/out ratio is < 1 on smoke days when out >= 12 ug/m3
 # also have code to do this in the initial_analysis_allPA code, but is faster to do it here
-inds = smoke_inds[np.where(pa_df_nn['PM25_bj_out'].iloc[smoke_inds]>=12.05)]
-inds2 = np.where((pa_df_nn['PM25_bj_in'].iloc[inds]/pa_df_nn['PM25_bj_out'].iloc[inds]) < 1)[0]
-print('si ratio < 1, at or above moderate level',len(inds2),len(inds2)/len(inds))
+inds3 = smoke_inds[np.where(pa_df_nn['PM25_bj_out'].iloc[smoke_inds]>=12.05)]
+inds4 = np.where((pa_df_nn['PM25_bj_in'].iloc[inds3]/pa_df_nn['PM25_bj_out'].iloc[inds3]) < 1)[0]
+print('si ratio < 1, at or above moderate level',len(inds4),len(inds4)/len(inds3))
+
+########################################################################################################
+# make pdf of indoor concentrations on smoke-impacted days
+########################################################################################################
+data = pa_df_nn['PM25_bj_in'].iloc[smoke_inds]
+data_hs = pa_df_nn['PM25_bj_in'].iloc[inds1]
+
+# look at all smoke-impacted days and heavily smoke-impacted days
+# getting data of the histogram
+count, bins_count = np.histogram(data, bins=100)
+count_hs, bins_count_hs = np.histogram(data_hs,bins=100)
+# finding the PDF of the histogram using count values
+pdf = count / sum(count)
+pdf_hs = count_hs / sum(count_hs)
+# using numpy np.cumsum to calculate the CDF
+# We can also find using the PDF values by looping and adding
+cdf = np.cumsum(pdf)
+cdf_hs = np.cumsum(pdf_hs)
+
+fig, ax = plt.subplots(1)
+ax.plot(bins_count[1:],100.0*cdf,color='darkgray',label='All smoke-impacted days')
+ax.plot(bins_count_hs[1:],100.0*cdf_hs,color='k',label='Heavily smoke-impacted days')
+ax.plot([35.45,35.45],[0,100.1],'--',color='darkorange',label='24hr PM$_{2.5}$ standard')
+ax.plot([12.05,12.05],[0,100.1],'--',color='gold',label='Annual PM$_{2.5}$ standard')
+ax.set_ylim([0,100.1])
+ax.spines["right"].set_visible(False)
+ax.spines["top"].set_visible(False)
+ax.legend(loc='best',frameon=False)
+ax.set_xlabel('Daily-mean Indoor PM$_{2.5}$ [$\mu$g m$^{-3}$]')
+ax.set_ylabel('Percent of Observations [%]')
+plt.savefig(out_fig_fp+'indoor_smokeimpacted_cdf_wUSregions_'+file_desc+'_'+version+'.png',dpi=300)
+plt.show()
 
 ########################################################################################################
 # make boxplots
